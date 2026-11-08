@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Notes.Identity.Data;
 using Notes.Identity.Models;
 
@@ -31,13 +32,6 @@ namespace Notes.Identity
                 .AddEntityFrameworkStores<AuthDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.ConfigureApplicationCookie(config => // Куки
-            {
-                config.Cookie.Name = "Notes.Identity.Cookie";
-                config.LoginPath = "/Auth/Login";
-                config.LogoutPath = "/Auth/Logout";
-            });
-
             services.AddIdentityServer()
                 .AddAspNetIdentity<AppUser>()
                 .AddInMemoryApiResources(Configuration.ApiResources)
@@ -45,6 +39,15 @@ namespace Notes.Identity
                 .AddInMemoryApiScopes(Configuration.ApiScopes)
                 .AddInMemoryClients(Configuration.Clients)
                 .AddDeveloperSigningCredential();
+
+            services.ConfigureApplicationCookie(config => // Куки
+            {
+                config.Cookie.Name = "Notes.Identity.Cookie";
+                config.LoginPath = "/Auth/Login";
+                config.LogoutPath = "/Auth/Logout";
+            });
+
+            services.AddControllersWithViews();
         }
 
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
@@ -53,14 +56,17 @@ namespace Notes.Identity
             {
                 app.UseDeveloperExceptionPage();
             }
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new PhysicalFileProvider(
+                    Path.Combine(env.ContentRootPath, "Styles")),
+                RequestPath = "/styles"
+            });
             app.UseRouting();
             app.UseIdentityServer();
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapGet("/", async context =>
-                {
-                    await context.Response.WriteAsync("HelloWorld");
-                });
+                endpoints.MapDefaultControllerRoute();
             });
         }
     }
